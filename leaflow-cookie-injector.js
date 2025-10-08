@@ -9,7 +9,7 @@
  * [MITM]
  * hostname = %APPEND% leaflow.net
  * 2. 在 Surge 配置文件的 [Script] 段中添加:
- * Leaflow-Cookie = type=http-request, pattern=^https:\/\/leaflow\.net, script-path=leaflow-cookie-injector.js, requires-body=false
+ * Leaflow-Cookie = type=http-request, pattern=^https:\/\/leaflow\.net, script-path=https://raw.githubusercontent.com/myouhi/leaflow/master/leaflow-cookie-injector.js, requires-body=false
  */
 
 function injectCookie() {
