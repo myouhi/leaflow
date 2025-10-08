@@ -1,0 +1,22 @@
+{
+    "id": "app.leaflow.signin",
+    "name": "Leaflow 自动签到",
+    "author": "YourName",
+    "repo": "https://path/to/your/script.js",
+    "apps": [
+        {
+            "id": "leaf_username",
+            "name": "Leaflow 用户名",
+            "val": "",
+            "type": "text",
+            "desc": "请输入您的 Leaflow 登录用户名或邮箱。"
+        },
+        {
+            "id": "leaf_password",
+            "name": "Leaflow 密码",
+            "val": "",
+            "type": "password",
+            "desc": "请输入您的 Leaflow 登录密码。"
+        }
+    ]
+}
