@@ -1,117 +1,117 @@
-/*
- * Surge 脚本：Leaflow 自动登录并签到 (BoxJS 版)
+/**
+ * @name Leaflow 登录脚本
+ * @description 用于自动登录 Leaflow 并获取 Cookie。
+ * @author Gemini
+ * @version 20251008
  *
- * [说明]
- * 此脚本会从 BoxJS 读取用户名和密码，更加安全和方便。
- *
- * [首次配置]
- * 1. 确保已安装并配置好 BoxJS。
- * 2. 订阅对应的 BoxJS 应用，并在其中填写您的用户名和密码。
- * - 用户名 Key: leaf_username
- * - 密码 Key:   leaf_password
+ * [task_local]
+ * # 每天早上 7 点执行一次登录任务
+ * 0 7 * * * https://raw.githubusercontent.com/your-repo/leaflow_login.js, tag=Leaflow登录, enabled=true
  */
 
-// --- 用户需要配置的部分 ---
-const loginUrl = 'https://leaflow.com/api/login';      // <--- 请替换成实际的登录请求 URL
-const checkinUrl = 'https://leaflow.com/api/check-in';    // <--- 请替换成实际的签到请求 URL
+const $ = new Env('Leaflow');
 
-// --- BoxJS 数据键 (必须与 BoxJS 订阅中的 id 一致) ---
-const KEY_USERNAME = 'leaf_username';
-const KEY_PASSWORD = 'leaf_password';
-
-// --- 主要逻辑 ---
+// --- 脚本主要逻辑 ---
 (async () => {
-    // 从 BoxJS ($persistentStore) 读取用户名和密码
-    const username = $persistentStore.read(KEY_USERNAME);
-    const password = $persistentStore.read(KEY_PASSWORD);
+  // 1. 从 BoxJs 读取账号信息
+  const username = $prefs.get('@leaflow.username');
+  const password = $prefs.get('@leaflow.password');
 
-    if (!username || !password) {
-        const msg = `请先在 BoxJS 中为 ${KEY_USERNAME} 和 ${KEY_PASSWORD} 设置正确的凭证。`;
-        console.log(`❌ ${msg}`);
-        $notification.post('Leaflow 签到配置错误', '', msg);
-        $done();
+  if (!username || !password) {
+    $.log('❌ 未在 BoxJs 中配置 Leaflow 的账号或密码');
+    $.msg('Leaflow 登录失败', '配置错误', '请先在 BoxJs 中设置账号和密码');
+    return;
+  }
+  
+  $.log(`🔔 开始为账号 [${username}] 执行登录...`);
+
+  // 2. 发送登录请求
+  await login(username, password);
+
+})()
+.catch((e) => {
+  $.logErr(e);
+})
+.finally(() => {
+  $.done();
+});
+
+
+// --- 登录函数 ---
+function login(username, password) {
+  return new Promise((resolve) => {
+    // --- ⚠️ 这是你需要根据抓包结果修改的核心部分 ---
+    const requestOptions = {
+      // 登录接口的 URL，需要你通过抓包获取
+      url: 'https://leaflow.net/login/api', // <--- ⚠️ 【请修改】这里很可能不是这个地址
+
+      // 请求方法，通常是 POST
+      method: 'POST',
+
+      // 请求头，非常重要，需要从抓包结果中复制
+      headers: {
+        'Content-Type': 'application/json;charset=UTF-8', // <--- ⚠️ 【请修改】可能是 application/x-www-form-urlencoded
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36',
+        'Referer': 'https://leaflow.net/login', // 通常需要 Referer
+        'X-Requested-With': 'XMLHttpRequest' // 异步请求的标志
+        // 如果有其他类似 x-csrf-token 的头，也需要加上
+      },
+
+      // 请求体，包含了你的账号和密码
+      body: JSON.stringify({ // <--- ⚠️ 【请修改】如果 Content-Type 是 form-urlencoded，格式需要改变
+        'user': username, // <--- ⚠️ 【请修改】这里的 key (例如 'user') 需要根据抓包结果确定
+        'password': password, // <--- ⚠️ 【请修改】这里的 key (例如 'password') 需要根据抓包结果确定
+        'remember_me': 'on'
+      })
+    };
+    // ----------------------------------------------------
+
+    $.log('🚀 正在发送登录请求...');
+    $.post(requestOptions, (error, response, data) => {
+      if (error) {
+        $.logErr(`登录请求失败: ${error}`);
+        $.msg('Leaflow 登录失败', '网络错误', '请检查网络连接或代理设置');
         return;
-    }
+      }
 
-    console.log(`[${new Date().toLocaleString()}] 开始执行 Leaflow 登录...`);
-    getCookie(username, password, (cookie) => {
-        if (!cookie) {
-            console.log('❌ 登录失败或未能获取 Cookie');
-            $done();
-            return;
-        }
-        console.log('✅ 登录成功, Cookie 获取成功!');
-        checkIn(cookie);
-    });
-})();
+      try {
+        $.log(`statusCode: ${response.statusCode}`);
+        $.log(`response headers: ${JSON.stringify(response.headers)}`);
+        $.log(`response body: ${data}`);
 
+        // 3. 判断登录是否成功
+        const responseBody = JSON.parse(data); // 假设返回的是 JSON
+        // --- ⚠️ 【请修改】这里的判断条件需要根据实际返回的数据来写 ---
+        if (responseBody.code === 200 && responseBody.message === '登录成功') {
+          $.log('✅ 登录成功！');
 
-// --- 网络请求函数 (与上一版相同，无需修改) ---
+          // 4. 提取并保存 Cookie
+          const cookie = response.headers['Set-Cookie'] || response.headers['set-cookie'];
+          if (cookie) {
+            $prefs.set(cookie, '@leaflow.cookie');
+            $.log(`🍪 Cookie 已保存: ${cookie}`);
+            $.msg('Leaflow 登录成功', `账号: ${username}`, 'Cookie 已获取并保存');
+          } else {
+            $.msg('Leaflow 登录成功', '但未能获取 Cookie', '请检查脚本的 Cookie 提取逻辑');
+          }
 
-/**
- * 登录并获取 Cookie
- * @param {string} username 用户名
- * @param {string} password 密码
- * @param {function(string|null)} callback 回调函数
- */
-function getCookie(username, password, callback) {
-    const request = {
-        url: loginUrl,
-        headers: {
-            'Content-Type': 'application/json;charset=UTF-8',
-            'User-Agent': 'Surge/5 CFNetwork/1408.0.4 Darwin/22.5.0'
-        },
-        body: JSON.stringify({
-            'email': username,
-            'passwd': password 
-        })
-    };
-
-    $httpClient.post(request, (error, response, data) => {
-        if (error) {
-            $notification.post('Leaflow 登录失败', '网络请求错误', error);
-            callback(null);
-        } else if (response.statusCode !== 200) {
-            $notification.post('Leaflow 登录失败', `服务器错误: ${response.statusCode}`, '请检查登录 URL 和提交的参数');
-            callback(null);
         } else {
-            const cookie = response.headers['Set-Cookie'] || response.headers['set-cookie'];
-            if (!cookie) {
-                $notification.post('Leaflow 登录失败', '未能获取 Cookie', '可能是用户名或密码错误');
-                callback(null);
-            } else {
-                callback(cookie);
-            }
+          // 登录失败
+          const reason = responseBody.message || '未知原因';
+          $.log(`❌ 登录失败: ${reason}`);
+          $.msg('Leaflow 登录失败', `原因: ${reason}`, `账号: ${username}`);
         }
+      } catch (e) {
+        $.logErr(`解析响应失败: ${e}`);
+        $.msg('Leaflow 登录失败', '脚本错误', '无法解析服务器返回的数据');
+      } finally {
+        resolve();
+      }
     });
+  });
 }
 
-/**
- * 执行签到
- * @param {string} cookie
- */
-function checkIn(cookie) {
-    const request = {
-        url: checkinUrl,
-        method: 'POST',
-        headers: { 'Cookie': cookie, 'User-Agent': 'Surge/5 CFNetwork/1408.0.4 Darwin/22.5.0' }
-    };
-
-    $httpClient.post(request, (error, response, data) => {
-        if (error) {
-            $notification.post('Leaflow 签到失败', '网络请求错误', error);
-        } else {
-            try {
-                const result = JSON.parse(data);
-                if (result.ret === 1 || (result.msg && (result.msg.includes('成功') || result.msg.includes('已经签到')))) {
-                    $notification.post('Leaflow 签到成功', '', result.msg || '任务已完成');
-                } else {
-                    $notification.post('Leaflow 签到失败', '', result.msg || '未知错误');
-                }
-            } catch (e) {
-                $notification.post('Leaflow 签到失败', '无法解析服务器响应', data);
-            }
-        }
-        $done();
-    });
-}
+// 通用 Env 环境，兼容 Surge, Quantumult X, Loon
+function Env(name, opts) { /* ... 此处省略通用 Env 代码 ... */ }
+// 由于 Env 代码很长，我将它省略了。你可以从任何标准 Quantumult X 脚本中复制完整的 Env 构造函数。
+// 如果你需要完整的代码，我可以单独提供。
