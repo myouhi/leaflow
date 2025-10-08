@@ -1,15 +1,38 @@
 {
-    "id": "app.leaflow.signin.combined",
-    "name": "Leaflow 签到 (合并版)",
-    "author": "Gemini",
-    "repo": "https://gist.github.com/",
-    "apps": [
+  "id": "app_leaflow_json",
+  "name": "Leaflow 应用 (JSON)",
+  "icon": "https://raw.githubusercontent.com/Orz-3/mini/master/Color/leaf.png",
+  "repo": "https://github.com/Orz-3/mini",
+  "author": "@Gemini",
+  "apps": [
+    {
+      "id": "leaflowAccount",
+      "name": "Leaflow 账号信息",
+      "descs": [
+        "请在此处输入您的 Leaflow 账号和密码。",
+        "这些信息将保存在 BoxJs 中，供相关脚本读取使用。",
+        "注意：请勿泄露您的密码。"
+      ],
+      "keys": [
+        "@leaflow.username",
+        "@leaflow.password"
+      ],
+      "settings": [
         {
-            "id": "leaf_credentials",
-            "name": "Leaflow 凭证 (账号&密码)",
-            "val": "",
-            "type": "text",
-            "desc": "请将【用户名】和【密码】用 & 符号连接。例如: user@example.com&mypassword123"
+          "id": "@leaflow.username",
+          "name": "账号",
+          "val": "",
+          "type": "text",
+          "placeholder": "请输入 Leaflow 的用户名或邮箱"
+        },
+        {
+          "id": "@leaflow.password",
+          "name": "密码",
+          "val": "",
+          "type": "password",
+          "placeholder": "请输入 Leaflow 的密码"
         }
-    ]
+      ]
+    }
+  ]
 }
