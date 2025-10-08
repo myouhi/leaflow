@@ -2,7 +2,7 @@
     "id": "app.leaflow.signin",
     "name": "Leaflow 自动签到",
     "author": "YourName",
-    "repo": "https://path/to/your/script.js",
+    "repo": "https://raw.githubusercontent.com/myouhi/leaflow/master/leaflow_login_checkin.js",
     "apps": [
         {
             "id": "leaf_username",
